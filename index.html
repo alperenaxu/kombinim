@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kıyafet Kombin Deneme</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body {
+    font-family: 'Montserrat', sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+h1 { text-align: center; font-weight: 600; }
+.controls { margin-bottom: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+#container { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 1000px; }
+#canvasContainer { position: relative; width: 300px; height: 500px; background: #fff; border: 1px solid #ccc; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+canvas { position: absolute; left: 0; top: 0; }
+.category {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px;
+    background: #d9d9d9;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.category h3 { margin: 5px 0; font-weight: 600; }
+.items {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+    max-width: 150px;
+    padding: 10px;
+    border-bottom: 2px solid #999; /* raf çizgisi */
+}
+.items img {
+    width: 60px;
+    height: 60px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.items img:hover { border: 1px solid #333; }
+@media (max-width: 600px) {
+    #container { flex-direction: column; align-items: center; }
+    .items { max-width: 90vw; }
+}
+</style>
+</head>
+<body>
+
+<h1>Kıyafet Kombin Deneme</h1>
+
+<div class="controls">
+  <label>Cinsiyet Seç: 
+    <select id="genderSelect">
+      <option value="male">Erkek</option>
+      <option value="female">Kadın</option>
+    </select>
+  </label>
+  <label>Kafanı Yükle: <input type="file" id="headInput" accept="image/*"></label>
+</div>
+
+<div id="container">
+  <div id="canvasContainer">
+    <canvas id="bodyCanvas" width="300" height="500"></canvas>
+    <canvas id="clothesCanvas" width="300" height="500"></canvas>
+  </div>
+
+  <div class="category">
+    <h3>Üst</h3>
+    <div class="items" id="tops"></div>
+  </div>
+
+  <div class="category">
+    <h3>Alt</h3>
+    <div class="items" id="bottoms"></div>
+  </div>
+
+  <div class="category">
+    <h3>Ayakkabı</h3>
+    <div class="items" id="shoes"></div>
+  </div>
+</div>
+
+<script>
+const bodyCanvas = document.getElementById('bodyCanvas');
+const bodyCtx = bodyCanvas.getContext('2d');
+const clothesCanvas = document.getElementById('clothesCanvas');
+const clothesCtx = clothesCanvas.getContext('2d');
+
+let headImg = new Image();
+headImg.src = 'images/default-head.png'; // default kafa
+let bodyImg = new Image();
+bodyImg.src = 'images/male-body.png'; // default erkek silüeti
+
+const topsImgs = [];
+const bottomsImgs = [];
+const shoesImgs = [];
+
+const clothPositions = {
+  top: { x: 50, y: 120, width: 200, height: 150 },
+  bottom: { x: 50, y: 270, width: 200, height: 150 },
+  shoes: { x: 70, y: 420, width: 160, height: 60 }
+};
+
+const currentClothes = { top: null, bottom: null, shoes: null };
+
+const topUrls = ['images/tshirt1.png','images/tshirt2.png','images/tshirt3.png'];
+const bottomUrls = ['images/pants1.png','images/pants2.png','images/pants3.png'];
+const shoesUrls = ['images/shoes1.png','images/shoes2.png','images/shoes3.png'];
+
+function loadClothes(urls, array, containerId, category) {
+  urls.forEach(url => {
+    const img = new Image();
+    img.onload = () => { array.push(img); drawClothes(); };
+    img.src = url;
+
+    const thumb = document.createElement('img');
+    thumb.src = url;
+    thumb.addEventListener('click', () => { currentClothes[category] = img; drawClothes(); });
+    document.getElementById(containerId).appendChild(thumb);
+  });
+}
+
+loadClothes(topUrls, topsImgs, 'tops', 'top');
+loadClothes(bottomUrls, bottomsImgs, 'bottoms', 'bottom');
+loadClothes(shoesUrls, shoesImgs, 'shoes', 'shoes');
+
+document.getElementById('headInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const img = new Image();
+  img.onload = () => { headImg = img; drawBody(); };
+  img.src = URL.createObjectURL(file);
+});
+
+document.getElementById('genderSelect').addEventListener('change', e => {
+  const gender = e.target.value;
+  if(gender === 'male') bodyImg.src = 'images/male-body.png';
+  else bodyImg.src = 'images/female-body.png';
+  bodyImg.onload = drawBody;
+});
+
+function drawBody() {
+  bodyCtx.clearRect(0,0,bodyCanvas.width,bodyCanvas.height);
+  bodyCtx.drawImage(bodyImg,0,0,300,500);
+  bodyCtx.drawImage(headImg,100,20,100,100);
+}
+
+function drawClothes() {
+  clothesCtx.clearRect(0,0,clothesCanvas.width,clothesCanvas.height);
+  if(currentClothes.top) clothesCtx.drawImage(currentClothes.top, clothPositions.top.x, clothPositions.top.y, clothPositions.top.width, clothPositions.top.height);
+  if(currentClothes.bottom) clothesCtx.drawImage(currentClothes.bottom, clothPositions.bottom.x, clothPositions.bottom.y, clothPositions.bottom.width, clothPositions.bottom.height);
+  if(currentClothes.shoes) clothesCtx.drawImage(currentClothes.shoes, clothPositions.shoes.x, clothPositions.shoes.y, clothPositions.shoes.width, clothPositions.shoes.height);
+}
+
+let dragTarget = null;
+let offset = {x:0,y:0};
+let dragCategory = null;
+
+clothesCanvas.addEventListener('mousedown', e => {
+  const x = e.offsetX, y = e.offsetY;
+  for(const cat of ['top','bottom','shoes']){
+    const pos = clothPositions[cat];
+    const cloth = currentClothes[cat];
+    if(cloth && x>=pos.x && x<=pos.x+pos.width && y>=pos.y && y<=pos.y+pos.height){
+      dragTarget = cloth;
+      dragCategory = cat;
+      offset.x = x-pos.x;
+      offset.y = y-pos.y;
+      break;
+    }
+  }
+});
+
+clothesCanvas.addEventListener('mousemove', e => {
+  if(!dragTarget) return;
+  const x = e.offsetX, y = e.offsetY;
+  const pos = clothPositions[dragCategory];
+  pos.x = x-offset.x;
+  pos.y = y-offset.y;
+  drawClothes();
+});
+
+clothesCanvas.addEventListener('mouseup', ()=>{ dragTarget=null; dragCategory=null; });
+clothesCanvas.addEventListener('mouseleave', ()=>{ dragTarget=null; dragCategory=null; });
+
+bodyImg.onload = drawBody;
+headImg.onload = drawBody;
+</script>
+
+</body>
+</html>
